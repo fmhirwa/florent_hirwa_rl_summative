@@ -1,9 +1,9 @@
 # florent_hirwa_rl_summative
 Summative Assignment - Reinforcement Learning
 
-Below is an example of a `README.md` file for your project:
-
----
+Video Recording: https://youtu.be/eoBoaxzlJOA 
+GitHub Repository: https://github.com/fmhirwa/florent_hirwa_rl_summative
+Report: https://docs.google.com/document/d/1rY3WCi_NxhoY0Z76KKj0xHF84FxN6k9n7N5U0nlOtTM/edit?tab=t.0
 
 # Urban Skin Health RL Simulation
 
@@ -174,7 +174,7 @@ In our experiments, a test run showed DQN achieving a near-zero reward in one ep
 
 ## License
 
-[Include License Information Here]
+None 
 
 ## Author
 
