@@ -10,6 +10,7 @@ def run_agent(model, name, env, delay=0.2):
     total_reward = 0
     done = False
     frames = []
+    
 
     print(f"\n{name} Agent Starting...\n")
     while not done:
@@ -17,6 +18,7 @@ def run_agent(model, name, env, delay=0.2):
         obs, reward, terminated, truncated, _ = env.step(action)
         total_reward += reward
         done = terminated or truncated
+        print(f"{name} Position: {env.agent_pos}, Action: {action}")
 
         frame = np.full((env.grid_size, env.grid_size), ".", dtype=str)
         gx, gy = env.goal
@@ -58,3 +60,30 @@ if __name__ == "__main__":
         time.sleep(0.5)
 
     print(f"\n Final Comparison:\nDQN Total Reward: {reward_dqn:.4f}\nPPO Total Reward: {reward_ppo:.4f}")
+
+    from PIL import Image, ImageDraw, ImageFont
+
+def text_to_image(lines, font_size=16):
+    font = ImageFont.load_default()
+    max_width = max([len(line) for line in lines]) * font_size // 2
+    img = Image.new("RGB", (max_width, font_size * len(lines)), color="white")
+    draw = ImageDraw.Draw(img)
+    for i, line in enumerate(lines):
+        draw.text((5, i * font_size), line, fill="black", font=font)
+    return img
+
+# Generate GIF frames
+gif_frames = []
+for i in range(max_steps):
+    combined = ["DQN:           PPO:"]
+    dqn_row = frames_dqn[i]
+    ppo_row = frames_ppo[i]
+    for d, p in zip(dqn_row, ppo_row):
+        combined.append(f"{d}      {p}")
+    gif_frame = text_to_image(combined)
+    gif_frames.append(gif_frame)
+
+# Save GIF
+gif_frames[0].save("agent_comparison.gif", save_all=True, append_images=gif_frames[1:], duration=500, loop=0)
+print("✅ agent_comparison.gif saved.")
+

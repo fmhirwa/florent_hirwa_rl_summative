@@ -17,7 +17,7 @@ class UrbanSkinExposureEnv(gym.Env):
 
         self.grid_size = grid_size
         self.uvb_grid = load_uvb_ascii(uvb_path, crop_start=(100, 100), crop_size=(grid_size, grid_size))
-        self.max_steps = grid_size * 2  # simple limit
+        self.max_steps = grid_size * 100  # simple limit
 
         self.action_space = spaces.Discrete(5)  # 0=Up, 1=Down, 2=Left, 3=Right, 4=Wait
         self.observation_space = spaces.Box(
@@ -79,6 +79,48 @@ class UrbanSkinExposureEnv(gym.Env):
             y -= 1
         elif action == 3 and y < self.grid_size - 1:
             y += 1
+        elif action == 4:
+            # Wait action: no movement
+            pass
+
+        self.agent_pos = [x, y]
+        self.current_step += 1
+
+        # Scale the UVB value to amplify variation in rewards
+        scaling_factor = 10.0  # Adjust this factor as needed
+        uvb_level = self.uvb_grid[x, y] * scaling_factor
+
+        # Add a constant step penalty to discourage unnecessary moves
+        step_penalty = 0.1
+
+        # Compute reward: negative penalty for UVB exposure plus step penalty
+        reward = -uvb_level - step_penalty
+
+        # Check if the goal is reached or if the episode has timed out
+        terminated = self.agent_pos == list(self.goal)
+        truncated = self.current_step >= self.max_steps
+
+        if terminated:
+            reward += 5.0  # Increased bonus for reaching the goal
+
+        obs = self._get_obs()
+        info = {}
+
+        return obs, reward, terminated, truncated, info
+
+    
+    """
+    def step(self, action):
+        x, y = self.agent_pos
+
+        if action == 0 and x > 0:
+            x -= 1
+        elif action == 1 and x < self.grid_size - 1:
+            x += 1
+        elif action == 2 and y > 0:
+            y -= 1
+        elif action == 3 and y < self.grid_size - 1:
+            y += 1
         # action 4 = Wait (no movement)
 
         self.agent_pos = [x, y]
@@ -97,7 +139,7 @@ class UrbanSkinExposureEnv(gym.Env):
         info = {}
 
         return obs, reward, terminated, truncated, info
-
+    """
 
     def _get_obs(self):
         x, y = self.agent_pos
