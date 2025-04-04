@@ -12,12 +12,12 @@ class UrbanSkinExposureEnv(gym.Env):
     The agent must reach a skincare center while minimizing UVB damage.
     """
 
-    def __init__(self, grid_size=10, uvb_path="data/56461_UVB3_Mean_UV-B_of_Highest_Month.asc"):
+    def __init__(self, grid_size=11, uvb_path="data/56461_UVB3_Mean_UV-B_of_Highest_Month.asc"):
         super(UrbanSkinExposureEnv, self).__init__()
 
         self.grid_size = grid_size
         self.uvb_grid = load_uvb_ascii(uvb_path, crop_start=(100, 100), crop_size=(grid_size, grid_size))
-        self.max_steps = grid_size * 100  # simple limit
+        self.max_steps = grid_size * 10  # simple limit
 
         self.action_space = spaces.Discrete(5)  # 0=Up, 1=Down, 2=Left, 3=Right, 4=Wait
         self.observation_space = spaces.Box(
@@ -28,7 +28,7 @@ class UrbanSkinExposureEnv(gym.Env):
         )
 
         self.agent_pos = None
-        self.goal = (grid_size - 1, grid_size - 1)
+        self.goal = (grid_size //2, grid_size //2)
         self.current_step = 0
     
     def reset(self, seed=None, options=None):
@@ -87,11 +87,11 @@ class UrbanSkinExposureEnv(gym.Env):
         self.current_step += 1
 
         # Scale the UVB value to amplify variation in rewards
-        scaling_factor = 10.0  # Adjust this factor as needed
+        scaling_factor = 5.0  # Adjust this factor as needed
         uvb_level = self.uvb_grid[x, y] * scaling_factor
 
         # Add a constant step penalty to discourage unnecessary moves
-        step_penalty = 0.1
+        step_penalty = 0.001
 
         # Compute reward: negative penalty for UVB exposure plus step penalty
         reward = -uvb_level - step_penalty
