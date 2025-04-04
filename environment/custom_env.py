@@ -1,15 +1,12 @@
-# environment/custom_env.py
-
 import gymnasium as gym
 from gymnasium import spaces
 import numpy as np
 from environment.load_uvb_data import load_uvb_ascii
 
 class UrbanSkinExposureEnv(gym.Env):
-
     """
     Custom RL environment simulating UVB exposure in a polluted urban area.
-    The agent must reach a skincare center while minimizing UVB damage.
+    The agent must reach the cell with the lowest UVB (the safest area) while minimizing UVB damage.
     """
 
     def __init__(self, grid_size=11, uvb_path="data/56461_UVB3_Mean_UV-B_of_Highest_Month.asc"):
@@ -27,47 +24,24 @@ class UrbanSkinExposureEnv(gym.Env):
             dtype=np.float32
         )
 
+        # Set goal as the position with the lowest UVB in the grid
+        goal_idx = np.unravel_index(np.argmin(self.uvb_grid, axis=None), self.uvb_grid.shape)
+        self.goal = goal_idx  # e.g., (row, col) position with lowest UVB
+
         self.agent_pos = None
-        self.goal = (grid_size //2, grid_size //2)
         self.current_step = 0
-    
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
-        self.agent_pos = [0, 0]
+        # Choose a random starting position that is not the goal.
+        while True:
+            pos = [np.random.randint(0, self.grid_size), np.random.randint(0, self.grid_size)]
+            if tuple(pos) != self.goal:
+                self.agent_pos = pos
+                break
         self.current_step = 0
         return self._get_obs(), {}
-    """
-    def reset(self):
-        self.agent_pos = [0, 0]
-        self.current_step = 0
-        return self._get_obs()
-    
-    def step(self, action):
-        x, y = self.agent_pos
 
-        if action == 0 and x > 0:             # Up
-            x -= 1
-        elif action == 1 and x < self.grid_size - 1:  # Down
-            x += 1
-        elif action == 2 and y > 0:           # Left
-            y -= 1
-        elif action == 3 and y < self.grid_size - 1:  # Right
-            y += 1
-        # action == 4 is Wait: do nothing
-
-        self.agent_pos = [x, y]
-        self.current_step += 1
-
-        uvb_level = self.uvb_grid[x, y]
-        done = self.agent_pos == list(self.goal) or self.current_step >= self.max_steps
-
-        reward = -uvb_level  # UVB exposure penalty
-        if self.agent_pos == list(self.goal):
-            reward += 1.0  # Bonus for reaching the goal
-
-        obs = self._get_obs()
-        return obs, reward, done, {}
-    """
     def step(self, action):
         x, y = self.agent_pos
 
@@ -91,12 +65,12 @@ class UrbanSkinExposureEnv(gym.Env):
         uvb_level = self.uvb_grid[x, y] * scaling_factor
 
         # Add a constant step penalty to discourage unnecessary moves
-        step_penalty = 0.001
+        step_penalty = 0.01
 
         # Compute reward: negative penalty for UVB exposure plus step penalty
         reward = -uvb_level - step_penalty
 
-        # Check if the goal is reached or if the episode has timed out
+        # Check termination conditions: goal reached or max steps exceeded
         terminated = self.agent_pos == list(self.goal)
         truncated = self.current_step >= self.max_steps
 
@@ -107,39 +81,6 @@ class UrbanSkinExposureEnv(gym.Env):
         info = {}
 
         return obs, reward, terminated, truncated, info
-
-    
-    """
-    def step(self, action):
-        x, y = self.agent_pos
-
-        if action == 0 and x > 0:
-            x -= 1
-        elif action == 1 and x < self.grid_size - 1:
-            x += 1
-        elif action == 2 and y > 0:
-            y -= 1
-        elif action == 3 and y < self.grid_size - 1:
-            y += 1
-        # action 4 = Wait (no movement)
-
-        self.agent_pos = [x, y]
-        self.current_step += 1
-
-        uvb_level = self.uvb_grid[x, y]
-        reward = -uvb_level
-
-        terminated = self.agent_pos == list(self.goal)  # reached goal
-        truncated = self.current_step >= self.max_steps  # timeout
-
-        if terminated:
-            reward += 1.0  # goal bonus
-
-        obs = self._get_obs()
-        info = {}
-
-        return obs, reward, terminated, truncated, info
-    """
 
     def _get_obs(self):
         x, y = self.agent_pos
